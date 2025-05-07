@@ -5,12 +5,50 @@ import (
 	"net/http"
 	"time"
 
+	"fmt"
+
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 // Полная реализация UserServer
+func CreateDatabaseIfNotExists(dbUser, dbPassword, dbHost, dbPort, dbName string) error {
+	// Подключаемся к системной БД postgres для создания новой БД
+	dsn := fmt.Sprintf("host=%s user=%s password=%s port=%s dbname=postgres sslmode=disable",
+		dbHost, dbUser, dbPassword, dbPort)
+
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to connect to postgres database: %w", err)
+	}
+
+	// Проверяем существование БД
+	var count int64
+	err = db.Raw("SELECT COUNT(*) FROM pg_database WHERE datname = ?", dbName).Scan(&count).Error
+	if err != nil {
+		return fmt.Errorf("failed to check database existence: %w", err)
+	}
+
+	// Создаем БД если не существует
+	if count == 0 {
+		err = db.Exec(fmt.Sprintf("CREATE DATABASE %s", dbName)).Error
+		if err != nil {
+			return fmt.Errorf("failed to create database: %w", err)
+		}
+		fmt.Printf("Database '%s' created successfully\n", dbName)
+	} else {
+		fmt.Printf("Database '%s' already exists\n", dbName)
+	}
+
+	sqlDB, _ := db.DB()
+	sqlDB.Close()
+	return nil
+}
 
 // UserModel представляет пользователя в базе данных
 type UserModel struct {

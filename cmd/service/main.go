@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"strconv"
 
 	"gorm.io/driver/postgres"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/kerilOvs/profile_sevice/api"
 	config "github.com/kerilOvs/profile_sevice/internal/config"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 // This is the main function of the program
@@ -24,7 +26,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
+	api.CreateDatabaseIfNotExists(config.Database.User, config.Database.Password, config.Database.Host, strconv.Itoa(config.Database.Port), config.Database.Dbname)
 	fmt.Println("db user :", config.Database.User)
 
 	dsn := fmt.Sprintf(
@@ -54,8 +56,14 @@ func main() {
 	server := api.NewUserServer(db)
 
 	// 4. Запуск Echo-сервера
-	e := echo.New()                 // а не, библиотека нужна
-	api.RegisterHandlers(e, server) // не реализовано
+	e := echo.New() // а не, библиотека нужна
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"http://localhost:3000"}, // Разрешить фронтенд
+		AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete},
+		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept},
+	}))
+
+	api.RegisterHandlers(e, server) //  реализовано
 
 	log.Printf("Server started on :%s", strconv.Itoa(config.Server.Port))
 	log.Fatal(e.Start(":" + strconv.Itoa(config.Server.Port)))
