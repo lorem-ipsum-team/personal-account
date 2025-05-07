@@ -51,13 +51,15 @@ func CreateDatabaseIfNotExists(dbUser, dbPassword, dbHost, dbPort, dbName string
 }
 
 // UserModel представляет пользователя в базе данных
+// UserModel представляет пользователя в базе данных
 type UserModel struct {
 	ID              uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 	Name            string    `gorm:"not null"`
 	Surname         string    `gorm:"not null"`
 	AboutMyself     *string   `gorm:"type:text"`
 	Gender          *string   `gorm:"type:varchar(10)"`
-	JungResult      *string   `gorm:"type:text"`
+	BirthDate       *time.Time
+	JungResult      *string `gorm:"type:text"`
 	JungLastAttempt *time.Time
 	PrimaryPhoto    *string   `gorm:"type:text"`
 	CreatedAt       time.Time `gorm:"not null"`
@@ -129,6 +131,75 @@ func (s *UserServer) DeleteUser(ctx echo.Context, id UserId, params DeleteUserPa
 		return ctx.JSON(http.StatusNotFound, errorResponse("User not found"))
 	}
 	return ctx.NoContent(http.StatusNoContent)
+}
+
+func (s *UserServer) UpdateUserProfile(ctx echo.Context, id UserId, params UpdateUserProfileParams) error {
+	var req UserProfileUpdate
+	if err := ctx.Bind(&req); err != nil {
+		return ctx.JSON(http.StatusBadRequest, errorResponse("Invalid request body"))
+	}
+
+	// Проверяем существование пользователя
+	var user UserModel
+	if err := s.db.First(&user, "id = ?", id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return ctx.JSON(http.StatusNotFound, errorResponse("User not found"))
+		}
+		return ctx.JSON(http.StatusInternalServerError, errorResponse("Database error"))
+	}
+
+	// Подготавливаем обновления
+	updates := make(map[string]interface{})
+	if req.Name != nil {
+		if *req.Name == "" {
+			return ctx.JSON(http.StatusBadRequest, errorResponse("Name cannot be empty"))
+		}
+		updates["name"] = *req.Name
+	}
+	if req.Surname != nil {
+		if *req.Surname == "" {
+			return ctx.JSON(http.StatusBadRequest, errorResponse("Surname cannot be empty"))
+		}
+		updates["surname"] = *req.Surname
+	}
+	if req.AboutMyself != nil {
+		updates["about_myself"] = *req.AboutMyself
+	}
+	if req.Gender != nil {
+		updates["gender"] = *req.Gender
+	}
+	if req.BirthDate != nil {
+		updates["birth_date"] = *req.BirthDate
+	}
+	if req.JungResult != nil {
+		// Валидация типа личности по Юнгу
+		if !isValidJungType(*req.JungResult) {
+			return ctx.JSON(http.StatusBadRequest, errorResponse("Invalid Jung personality type"))
+		}
+		updates["jung_result"] = *req.JungResult
+		now := time.Now()
+		updates["jung_last_attempt"] = &now
+	}
+
+	// Применяем обновления
+	if len(updates) > 0 {
+		if err := s.db.Model(&UserModel{}).Where("id = ?", id).Updates(updates).Error; err != nil {
+			return ctx.JSON(http.StatusInternalServerError, errorResponse("Failed to update profile"))
+		}
+	}
+
+	return ctx.NoContent(http.StatusNoContent)
+}
+
+// Вспомогательная функция для валидации типа по Юнгу
+func isValidJungType(jungType string) bool {
+	validTypes := map[string]bool{
+		"INTJ": true, "INTP": true, "ENTJ": true, "ENTP": true,
+		"INFJ": true, "INFP": true, "ENFJ": true, "ENFP": true,
+		"ISTJ": true, "ISFJ": true, "ESTJ": true, "ESFJ": true,
+		"ISTP": true, "ISFP": true, "ESTP": true, "ESFP": true,
+	}
+	return validTypes[jungType]
 }
 
 func (s *UserServer) GetUserById(ctx echo.Context, id UserId) error {
@@ -370,6 +441,7 @@ func (s *UserServer) mapUserToResponse(user UserModel) User {
 		Surname:         user.Surname,
 		AboutMyself:     user.AboutMyself,
 		Gender:          (*UserGender)(user.Gender),
+		BirthDate:       user.BirthDate,
 		CreatedAt:       user.CreatedAt,
 		JungLastAttempt: user.JungLastAttempt,
 		JungResult:      user.JungResult,

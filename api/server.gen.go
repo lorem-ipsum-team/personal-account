@@ -60,6 +60,7 @@ type User struct {
 
 	// Gender User's gender identity
 	Gender *UserGender `json:"gender,omitempty"`
+	BirthDate       *time.Time
 
 	// Id Unique identifier for the user
 	Id openapi_types.UUID `json:"id"`
@@ -106,6 +107,26 @@ type UserCreate struct {
 
 // UserCreateGender User's gender identity
 type UserCreateGender string
+
+type UserProfileUpdate struct {
+	AboutMyself *string       `json:"about_myself,omitempty"`
+	BirthDate   *time.Time    `json:"birth_date,omitempty"`
+	Gender      *UserGender   `json:"gender,omitempty"`
+	Name        *string       `json:"name,omitempty"`
+	Surname     *string       `json:"surname,omitempty"`
+	JungResult      *string       `json:"jung_result,omitempty"`  // Новое поле
+	JungLastAttempt *time.Time    `json:"jung_last_attempt,omitempty"` // Новое поле
+}
+
+
+// UpdateUserProfileParams defines parameters for UpdateUserProfile.
+type UpdateUserProfileParams struct {
+	// IdempotencyKey Key to make the request idempotent
+	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
+}
+
+// UpdateUserProfileJSONRequestBody defines body for UpdateUserProfile for application/json ContentType.
+type UpdateUserProfileJSONRequestBody = UserProfileUpdate
 
 // UserPhoto defines model for UserPhoto.
 type UserPhoto struct {
@@ -226,6 +247,9 @@ type ServerInterface interface {
 	// Get user by ID
 	// (GET /users/{id})
 	GetUserById(ctx echo.Context, id UserId) error
+	// Update user's entire profile
+    // (PATCH /users/{id}/profile)
+    UpdateUserProfile(ctx echo.Context, id UserId, params UpdateUserProfileParams) error
 	// Update user's about section
 	// (PATCH /users/{id}/about)
 	UpdateUserAbout(ctx echo.Context, id UserId, params UpdateUserAboutParams) error
@@ -341,6 +365,42 @@ func (w *ServerInterfaceWrapper) GetUserById(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.GetUserById(ctx, id)
+	return err
+}
+
+// UpdateUserProfile converts echo context to params.
+func (w *ServerInterfaceWrapper) UpdateUserProfile(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "id" -------------
+	var id UserId
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, ctx.Param("id"), &id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter id: %s", err))
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpdateUserProfileParams
+
+	headers := ctx.Request().Header
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Expected one value for Idempotency-Key, got %d", n))
+		}
+
+		err = runtime.BindStyledParameterWithLocation("simple", false, "Idempotency-Key", runtime.ParamLocationHeader, valueList[0], &IdempotencyKey)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter Idempotency-Key: %s", err))
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.UpdateUserProfile(ctx, id, params)
 	return err
 }
 
@@ -711,6 +771,7 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 	router.POST(baseURL+"/users", wrapper.CreateUser)
 	router.DELETE(baseURL+"/users/:id", wrapper.DeleteUser)
 	router.GET(baseURL+"/users/:id", wrapper.GetUserById)
+	router.PATCH(baseURL+"/users/:id/profile", wrapper.UpdateUserProfile)
 	router.PATCH(baseURL+"/users/:id/about", wrapper.UpdateUserAbout)
 	router.PATCH(baseURL+"/users/:id/name", wrapper.UpdateUserName)
 	router.GET(baseURL+"/users/:id/photos", wrapper.GetUserPhotos)
