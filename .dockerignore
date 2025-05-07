@@ -1,0 +1,27 @@
+# Binaries
+/bin/
+/out/
+
+# Dependency directories
+/vendor/
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+
+# Environment files
+.env
+.env.local
+
+# Go workspace file
+go.work
+
+# Test binary
+*.test
+
+# git repository
+.git/
+
+# CICD configs
+.github/
