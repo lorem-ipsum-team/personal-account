@@ -23,7 +23,7 @@ jobs:
       - name: Install dependencies
         run: go mod download -x
       - name: Build binary
-        run: go mod build -v ${{ matrix.cmd-path }}
+        run: go build -v ${{ matrix.cmd-path }}
 
   dockerize:
     runs-on: ubuntu-latest
