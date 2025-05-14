@@ -38,6 +38,7 @@ func main() {
 		cfg.Database.Dbname,
 		strconv.Itoa(cfg.Database.Port),
 	)
+	fmt.Println(cfg)
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
@@ -108,16 +109,16 @@ func registerRoutes(e *echo.Echo, userHandler *handlers.UserHandler, photoHandle
 	e.PATCH("/users/:id/name", userHandler.UpdateUserName)       // depricated
 	e.PATCH("/users/:id/surname", userHandler.UpdateUserSurname) // depricated
 
-	//e.GET("/users/:id/photos", userHandler.GetUserPhotos)
+	e.GET("/users/:id/photos", userHandler.GetUserPhotos) // +
 	//e.PUT("/users/:id/photos", userHandler.AddUserPhoto)
-	//e.DELETE("/users/:id/photos/:photoId", userHandler.RemoveUserPhoto)
-	//e.PATCH("/users/:id/primary_photo", userHandler.UpdatePrimaryPhoto)
+	e.DELETE("/users/:id/photos/:photoId", userHandler.RemoveUserPhoto) // +
+	e.PATCH("/users/:id/primary_photo", userHandler.UpdatePrimaryPhoto) // +
 
-	//e.PUT("/users/:id/tag", userHandler.AddUserTag)
-	//e.GET("/users/:id/tags", userHandler.GetUserTags)
-	//e.DELETE("/users/:id/tags/:tagId", userHandler.RemoveUserTag)
+	e.PUT("/users/:id/tag", userHandler.AddUserTag)               // +
+	e.GET("/users/:id/tags", userHandler.GetUserTags)             // +
+	e.DELETE("/users/:id/tags/:tagId", userHandler.RemoveUserTag) // +
 
 	// Фото маршруты
-	e.POST("/users/:id/photos", photoHandler.UploadPhoto)
-	e.GET("/photos/:id", photoHandler.GetPhoto)
+	e.POST("/users/:id/addphoto", photoHandler.UploadPhoto) // + по айди юзера добавляет фотку
+	e.GET("/photos/:id", photoHandler.GetPhoto)             // + по айди !фото! отдает фотку
 }

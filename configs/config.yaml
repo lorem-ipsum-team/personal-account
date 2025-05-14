@@ -7,9 +7,9 @@ database:
 server:
   port: 8080
 minio:
-  endpoint: "localhost:9000"
-  accessKey: "myuser"
-  secretKey: "mypassword"
+  endpoint: "127.0.0.1:9000"
+  access_key: "AjVwVVB6Xwek7osJuW7C"
+  secret_key: "1kkbfuj2OC2wqyqVbMHJkTpa8G9xpuCscMXLgBVO"
   bucket: "mybucket"
   secure: false
-  useSSL: false
+  use_ssl: false
