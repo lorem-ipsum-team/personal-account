@@ -4,7 +4,6 @@ WORKDIR /usr/src
 COPY go.mod go.sum ./
 RUN go mod download -x
 
-COPY api ./api
 COPY cmd ./cmd
 COPY internal ./internal
 
