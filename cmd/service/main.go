@@ -112,7 +112,7 @@ func registerRoutes(e *echo.Echo, userHandler *handlers.UserHandler, photoHandle
 	e.GET("/users/:id/photos", userHandler.GetUserPhotos) // +
 	//e.PUT("/users/:id/photos", userHandler.AddUserPhoto)
 	e.DELETE("/users/:id/photos/:photoId", userHandler.RemoveUserPhoto) // +
-	e.PATCH("/users/:id/primary_photo", userHandler.UpdatePrimaryPhoto) // +
+	e.PATCH("/users/:id/primary_photo", userHandler.UpdatePrimaryPhoto) // + (айди фото)
 
 	e.PUT("/users/:id/tag", userHandler.AddUserTag)               // +
 	e.GET("/users/:id/tags", userHandler.GetUserTags)             // +

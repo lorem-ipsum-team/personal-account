@@ -1,15 +1,15 @@
 database:
-  host: "localhost"
+  host: "db_pers"
   port: 5432
-  user: "myuser"
-  password: "mypassword"
+  user: "postgres"
+  password: "password"
   dbname: "tinder_profile"
 server:
   port: 8080
 minio:
-  endpoint: "127.0.0.1:9000"
-  access_key: "AjVwVVB6Xwek7osJuW7C"
-  secret_key: "1kkbfuj2OC2wqyqVbMHJkTpa8G9xpuCscMXLgBVO"
+  endpoint: "minio_docker:9000"
+  access_key: "minioadmin"
+  secret_key: "minioadmin"
   bucket: "mybucket"
   secure: false
   use_ssl: false
