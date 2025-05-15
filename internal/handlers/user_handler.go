@@ -1,8 +1,11 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
+	"strings"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/kerilOvs/profile_sevice/internal/models"
 	"github.com/kerilOvs/profile_sevice/internal/service"
@@ -38,6 +41,20 @@ func (h *UserHandler) CreateUser(c echo.Context) error {
 }
 
 func (h *UserHandler) DeleteUser(c echo.Context) error {
+	requestedID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, errorResponse("Invalid user ID"))
+	}
+
+	tokenUserID, err := getJWTUserID(c.Request())
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, errorResponse("Invalid or missing JWT token"))
+	}
+
+	if requestedID != tokenUserID {
+		return c.JSON(http.StatusForbidden, errorResponse("You can only access your own data"))
+	}
+
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, errorResponse("Invalid user ID"))
@@ -51,6 +68,20 @@ func (h *UserHandler) DeleteUser(c echo.Context) error {
 }
 
 func (h *UserHandler) GetUserById(c echo.Context) error {
+	requestedID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, errorResponse("Invalid user ID"))
+	}
+
+	tokenUserID, err := getJWTUserID(c.Request())
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, errorResponse("Invalid or missing JWT token"))
+	}
+
+	if requestedID != tokenUserID {
+		return c.JSON(http.StatusForbidden, errorResponse("You can only access your own data"))
+	}
+
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, errorResponse("Invalid user ID"))
@@ -65,6 +96,20 @@ func (h *UserHandler) GetUserById(c echo.Context) error {
 }
 
 func (h *UserHandler) UpdateUserProfile(c echo.Context) error {
+	requestedID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, errorResponse("Invalid user ID"))
+	}
+
+	tokenUserID, err := getJWTUserID(c.Request())
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, errorResponse("Invalid or missing JWT token"))
+	}
+
+	if requestedID != tokenUserID {
+		return c.JSON(http.StatusForbidden, errorResponse("You can only access your own data"))
+	}
+
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, errorResponse("Invalid user ID"))
@@ -83,6 +128,20 @@ func (h *UserHandler) UpdateUserProfile(c echo.Context) error {
 }
 
 func (h *UserHandler) UpdateUserAbout(c echo.Context) error {
+	requestedID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, errorResponse("Invalid user ID"))
+	}
+
+	tokenUserID, err := getJWTUserID(c.Request())
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, errorResponse("Invalid or missing JWT token"))
+	}
+
+	if requestedID != tokenUserID {
+		return c.JSON(http.StatusForbidden, errorResponse("You can only access your own data"))
+	}
+
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, errorResponse("Invalid user ID"))
@@ -103,6 +162,20 @@ func (h *UserHandler) UpdateUserAbout(c echo.Context) error {
 }
 
 func (h *UserHandler) UpdateUserName(c echo.Context) error {
+	requestedID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, errorResponse("Invalid user ID"))
+	}
+
+	tokenUserID, err := getJWTUserID(c.Request())
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, errorResponse("Invalid or missing JWT token"))
+	}
+
+	if requestedID != tokenUserID {
+		return c.JSON(http.StatusForbidden, errorResponse("You can only access your own data"))
+	}
+
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, errorResponse("Invalid user ID"))
@@ -123,6 +196,20 @@ func (h *UserHandler) UpdateUserName(c echo.Context) error {
 }
 
 func (h *UserHandler) GetUserPhotos(c echo.Context) error {
+	requestedID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, errorResponse("Invalid user ID"))
+	}
+
+	tokenUserID, err := getJWTUserID(c.Request())
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, errorResponse("Invalid or missing JWT token"))
+	}
+
+	if requestedID != tokenUserID {
+		return c.JSON(http.StatusForbidden, errorResponse("You can only access your own data"))
+	}
+
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, errorResponse("Invalid user ID"))
@@ -137,6 +224,20 @@ func (h *UserHandler) GetUserPhotos(c echo.Context) error {
 }
 
 func (h *UserHandler) AddUserPhoto(c echo.Context) error {
+	requestedID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, errorResponse("Invalid user ID"))
+	}
+
+	tokenUserID, err := getJWTUserID(c.Request())
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, errorResponse("Invalid or missing JWT token"))
+	}
+
+	if requestedID != tokenUserID {
+		return c.JSON(http.StatusForbidden, errorResponse("You can only access your own data"))
+	}
+
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, errorResponse("Invalid user ID"))
@@ -158,6 +259,20 @@ func (h *UserHandler) AddUserPhoto(c echo.Context) error {
 }
 
 func (h *UserHandler) RemoveUserPhoto(c echo.Context) error {
+	requestedID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, errorResponse("Invalid user ID"))
+	}
+
+	tokenUserID, err := getJWTUserID(c.Request())
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, errorResponse("Invalid or missing JWT token"))
+	}
+
+	if requestedID != tokenUserID {
+		return c.JSON(http.StatusForbidden, errorResponse("You can only access your own data"))
+	}
+
 	userID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, errorResponse("Invalid user ID"))
@@ -176,6 +291,20 @@ func (h *UserHandler) RemoveUserPhoto(c echo.Context) error {
 }
 
 func (h *UserHandler) UpdatePrimaryPhoto(c echo.Context) error {
+	requestedID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, errorResponse("Invalid user ID"))
+	}
+
+	tokenUserID, err := getJWTUserID(c.Request())
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, errorResponse("Invalid or missing JWT token"))
+	}
+
+	if requestedID != tokenUserID {
+		return c.JSON(http.StatusForbidden, errorResponse("You can only access your own data"))
+	}
+
 	userID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, errorResponse("Invalid user ID"))
@@ -200,6 +329,20 @@ func (h *UserHandler) UpdatePrimaryPhoto(c echo.Context) error {
 }
 
 func (h *UserHandler) UpdateUserSurname(c echo.Context) error {
+	requestedID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, errorResponse("Invalid user ID"))
+	}
+
+	tokenUserID, err := getJWTUserID(c.Request())
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, errorResponse("Invalid or missing JWT token"))
+	}
+
+	if requestedID != tokenUserID {
+		return c.JSON(http.StatusForbidden, errorResponse("You can only access your own data"))
+	}
+
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, errorResponse("Invalid user ID"))
@@ -220,6 +363,20 @@ func (h *UserHandler) UpdateUserSurname(c echo.Context) error {
 }
 
 func (h *UserHandler) AddUserTag(c echo.Context) error {
+	requestedID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, errorResponse("Invalid user ID"))
+	}
+
+	tokenUserID, err := getJWTUserID(c.Request())
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, errorResponse("Invalid or missing JWT token"))
+	}
+
+	if requestedID != tokenUserID {
+		return c.JSON(http.StatusForbidden, errorResponse("You can only access your own data"))
+	}
+
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, errorResponse("Invalid user ID"))
@@ -241,6 +398,20 @@ func (h *UserHandler) AddUserTag(c echo.Context) error {
 }
 
 func (h *UserHandler) GetUserTags(c echo.Context) error {
+	requestedID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, errorResponse("Invalid user ID"))
+	}
+
+	tokenUserID, err := getJWTUserID(c.Request())
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, errorResponse("Invalid or missing JWT token"))
+	}
+
+	if requestedID != tokenUserID {
+		return c.JSON(http.StatusForbidden, errorResponse("You can only access your own data"))
+	}
+
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, errorResponse("Invalid user ID"))
@@ -255,6 +426,20 @@ func (h *UserHandler) GetUserTags(c echo.Context) error {
 }
 
 func (h *UserHandler) RemoveUserTag(c echo.Context) error {
+	requestedID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, errorResponse("Invalid user ID"))
+	}
+
+	tokenUserID, err := getJWTUserID(c.Request())
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, errorResponse("Invalid or missing JWT token"))
+	}
+
+	if requestedID != tokenUserID {
+		return c.JSON(http.StatusForbidden, errorResponse("You can only access your own data"))
+	}
+
 	userID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, errorResponse("Invalid user ID"))
@@ -278,4 +463,32 @@ func errorResponse(msg string) map[string]interface{} {
 
 func errorResponseWithCode(c echo.Context, err error, code int) error {
 	return c.JSON(code, errorResponse(err.Error()))
+}
+
+func getJWTUserID(r *http.Request) (uuid.UUID, error) {
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		return uuid.UUID{}, fmt.Errorf("no authorization header provided")
+	}
+
+	tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+
+	token, _, err := jwt.NewParser().ParseUnverified(tokenString, jwt.MapClaims{})
+	if err != nil {
+		return uuid.UUID{}, fmt.Errorf("failed to parse jwt: %w", err)
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return uuid.UUID{}, fmt.Errorf("failed to parse jwt claims")
+	}
+
+	sub, err := claims.GetSubject()
+	if err != nil {
+		return uuid.UUID{}, fmt.Errorf("failed to get subject from jwt: %w", err)
+	}
+
+	id, err := uuid.Parse(sub)
+
+	return id, err
 }
