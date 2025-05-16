@@ -4,17 +4,21 @@ import (
 	"errors"
 	"time"
 
+	"context"
+
 	"github.com/google/uuid"
 	"github.com/kerilOvs/profile_sevice/internal/models"
 	"github.com/kerilOvs/profile_sevice/internal/storage"
+	"github.com/kerilOvs/profile_sevice/internal/storage/rabbit"
 )
 
 type UserService struct {
-	storage storage.UserStorage
+	storage    storage.UserStorage
+	rabbitRepo *rabbit.Repo
 }
 
-func NewUserService(storage storage.UserStorage) *UserService {
-	return &UserService{storage: storage}
+func NewUserService(storage storage.UserStorage, rabbit *rabbit.Repo) *UserService {
+	return &UserService{storage: storage, rabbitRepo: rabbit}
 }
 
 func (s *UserService) CreateUser(id uuid.UUID, name, surname string, aboutMyself *string, gender *models.UserGender) (*models.User, error) {
@@ -34,6 +38,17 @@ func (s *UserService) CreateUser(id uuid.UUID, name, surname string, aboutMyself
 	if err := s.storage.CreateUser(user); err != nil {
 		return nil, err
 	}
+
+	anket := rabbit.UserAnket{
+		UserID:    id,
+		Gender:    *gender,
+		BirthDate: time.Now(), // to fix
+	}
+
+	// rabbit.PublishAnket()
+	ctx := context.TODO()
+
+	s.rabbitRepo.PublishAnket(ctx, anket)
 
 	return user, nil
 }
@@ -117,6 +132,40 @@ func (s *UserService) UpdateUserProfile(id uuid.UUID, updates models.UserProfile
 		now := time.Now()
 		updateFields["jung_last_attempt"] = now
 	}
+	if updates.BirthDate != nil && updates.Gender != nil {
+		anket := rabbit.UserAnket{
+			UserID:    id,
+			Gender:    *updates.Gender,
+			BirthDate: *updates.BirthDate, // to fix
+		}
+		ctx := context.TODO()
+		s.rabbitRepo.PublishAnket(ctx, anket)
+	} else if updates.BirthDate != nil {
+
+		uzer, err := s.GetUserByID(id)
+		if err != nil {
+			return err
+		}
+		anket := rabbit.UserAnket{
+			UserID:    id,
+			Gender:    *uzer.Gender,
+			BirthDate: *updates.BirthDate, // to fix
+		}
+		ctx := context.TODO()
+		s.rabbitRepo.PublishAnket(ctx, anket)
+	} else if updates.Gender != nil {
+		uzer, err := s.GetUserByID(id)
+		if err != nil {
+			return err
+		}
+		anket := rabbit.UserAnket{
+			UserID:    id,
+			Gender:    *updates.Gender,
+			BirthDate: *uzer.BirthDate, // to fix
+		}
+		ctx := context.TODO()
+		s.rabbitRepo.PublishAnket(ctx, anket)
+	}
 
 	if len(updateFields) > 0 {
 		return s.storage.UpdateUser(id, updateFields)
@@ -139,6 +188,23 @@ func (s *UserService) AddUserPhoto(userID uuid.UUID, photoURL string) (*models.U
 	if err := s.storage.AddPhoto(photo); err != nil {
 		return nil, err
 	}
+
+	photos_structs, err := s.storage.GetUserPhotos(userID)
+	if err != nil {
+		return nil, err
+	}
+	var photos_list []string
+	for _, tag := range photos_structs {
+		photos_list = append(photos_list, tag.URL)
+	}
+
+	photos := rabbit.Photos{
+		UserID:     userID,
+		Photos_url: photos_list,
+	}
+
+	ctx := context.TODO()
+	s.rabbitRepo.PublishPhotos(ctx, photos)
 
 	return photo, nil
 }
@@ -178,6 +244,24 @@ func (s *UserService) AddUserTag(userID uuid.UUID, tagValue string) (*models.Use
 	if err := s.storage.AddTag(tag); err != nil {
 		return nil, err
 	}
+
+	tags_structs, err := s.storage.GetUserTags(userID)
+	if err != nil {
+		return nil, err
+
+	}
+	var tags_list []string
+	for _, tag := range tags_structs {
+		tags_list = append(tags_list, tag.Value)
+	}
+
+	tags := rabbit.Tags{
+		UserID: userID,
+		Tags:   tags_list,
+	}
+
+	ctx := context.TODO()
+	s.rabbitRepo.PublishTags(ctx, tags)
 
 	return tag, nil
 }
@@ -219,6 +303,24 @@ func (s *UserService) GetUserPhotos(userID uuid.UUID) ([]*models.UserPhoto, erro
 }
 
 func (s *UserService) RemoveUserPhoto(userID, photoID uuid.UUID) error {
+	photos_structs, err := s.storage.GetUserPhotos(userID)
+	if err != nil {
+		return err
+	}
+	var photos_list []string
+	for _, tag := range photos_structs {
+		if tag.ID != photoID {
+			photos_list = append(photos_list, tag.URL)
+		}
+	}
+
+	photos := rabbit.Photos{
+		UserID:     userID,
+		Photos_url: photos_list,
+	}
+
+	ctx := context.TODO()
+	s.rabbitRepo.PublishPhotos(ctx, photos)
 	return s.storage.RemovePhoto(userID, photoID)
 }
 
@@ -227,5 +329,25 @@ func (s *UserService) GetUserTags(userID uuid.UUID) ([]*models.UserTag, error) {
 }
 
 func (s *UserService) RemoveUserTag(userID, tagID uuid.UUID) error {
+
+	tags_structs, err := s.storage.GetUserTags(userID)
+	if err != nil {
+		return err
+
+	}
+	var tags_list []string
+	for _, tag := range tags_structs {
+		if tag.ID != tagID {
+			tags_list = append(tags_list, tag.Value)
+		}
+	}
+
+	tags := rabbit.Tags{
+		UserID: userID,
+		Tags:   tags_list,
+	}
+
+	ctx := context.TODO()
+	s.rabbitRepo.PublishTags(ctx, tags)
 	return s.storage.RemoveTag(userID, tagID)
 }

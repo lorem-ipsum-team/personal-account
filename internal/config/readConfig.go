@@ -28,10 +28,18 @@ type MinioConfig struct {
 	UseSSL    bool   `yaml:"use_ssl" env:"MINIO_USE_SSL"`
 }
 
+type RabbitConfig struct {
+	Url            string `yaml:"endpoint" env:"MINIO_ENDPOINT"`
+	QueuePhotoName string `yaml:"queue_photo_name" env:"RABBIT_PHOTO_NAME"`
+	QueueTagsName  string `yaml:"queue_tags_name" env:"RABBIT_TAGS_NAME"`
+	QueueAnketName string `yaml:"queue_anket_name" env:"RABBIT_ANKET_NAME"`
+}
+
 type Config struct {
 	Database DBConfig     `yaml:"database"`
 	Server   ServerConfig `yaml:"server"`
 	Minio    MinioConfig  `yaml:"minio"`
+	Rabbit   RabbitConfig `yaml:"rabbit"`
 }
 
 func ReadConfig() (Config, error) {
