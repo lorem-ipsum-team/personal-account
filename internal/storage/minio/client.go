@@ -18,8 +18,10 @@ accessKey: "ErKo2T8FdXxvR4phdFop"
 */
 
 type Client struct {
-	Client *minio.Client
-	Bucket string
+	Client       *minio.Client
+	Bucket       string
+	PublicHost   string // Добавляем поле для публичного хоста
+	PublicPrefix string // Публичный префикс
 }
 
 func New(ctx context.Context, cfg config.MinioConfig) (*Client, error) {
@@ -30,18 +32,7 @@ func New(ctx context.Context, cfg config.MinioConfig) (*Client, error) {
 	if err != nil {
 		return nil, fmt.Errorf("minio init error: %w", err)
 	}
-	/*
-		// Получение списка бакетов
-		buckets, err := client.ListBuckets(context.Background())
-		if err != nil {
-			return nil, fmt.Errorf("Ошибка получения списка бакетов: %v", err)
-		}
 
-		// Вывод
-		for _, bucket := range buckets {
-			fmt.Printf("Бакет: %s, создан: %s\n", bucket.Name, bucket.CreationDate)
-		}
-	*/
 	exists, err := client.BucketExists(ctx, cfg.Bucket)
 	if err != nil {
 		return nil, fmt.Errorf("bucket check error: %w", err)
@@ -54,12 +45,14 @@ func New(ctx context.Context, cfg config.MinioConfig) (*Client, error) {
 	}
 
 	return &Client{
-		Client: client,
-		Bucket: cfg.Bucket,
+		Client:       client,
+		Bucket:       cfg.Bucket,
+		PublicHost:   "localhost",
+		PublicPrefix: "pub/",
 	}, nil
 }
 
-func (c *Client) GenerateUploadURL(ctx context.Context, objectName string, expiry time.Duration) (string, error) {
+func (c *Client) GenerateUploadURL1(ctx context.Context, objectName string, expiry time.Duration) (string, error) {
 	presignedURL, err := c.Client.PresignedPutObject(ctx, c.Bucket, objectName, expiry)
 	if err != nil {
 		return "", err
@@ -67,12 +60,12 @@ func (c *Client) GenerateUploadURL(ctx context.Context, objectName string, expir
 	return presignedURL.String(), nil
 }
 
-// Добавляем методы для работы с объектами
-func (c *Client) PutObject(ctx context.Context, objectName string, reader io.Reader, objectSize int64, opts minio.PutObjectOptions) (minio.UploadInfo, error) {
+// Добавляем методы для работы с объектами -- не используется блять....
+func (c *Client) PutObject1(ctx context.Context, objectName string, reader io.Reader, objectSize int64, opts minio.PutObjectOptions) (minio.UploadInfo, error) {
 	return c.Client.PutObject(ctx, c.Bucket, objectName, reader, objectSize, opts)
 }
 
-func (c *Client) PresignedGetObject(ctx context.Context, objectName string, expiry time.Duration, reqParams url.Values) (string, error) {
+func (c *Client) PresignedGetObject4(ctx context.Context, objectName string, expiry time.Duration, reqParams url.Values) (string, error) {
 	// return c.client.PresignedGetObject(ctx, c.bucket, objectName, expiry, reqParams)
 	presignedURL, err := c.Client.PresignedGetObject(ctx, c.Bucket, objectName, expiry, reqParams)
 	if err != nil {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 
 	//"mime"
 	//"path/filepath"
@@ -27,7 +28,7 @@ func NewPhotoService(client *minio.Client, bucket string) *PhotoService {
 
 func (s *PhotoService) UploadPhoto(ctx context.Context, file io.Reader, size int64) (string, error) {
 	// Генерируем уникальное имя файла с правильным расширением
-	objectName := uuid.New().String() + ".jpg"
+	objectName := "pub/" + uuid.New().String() + ".jpg"
 
 	_, err := s.minioClient.PutObject(
 		ctx,
@@ -48,16 +49,15 @@ func (s *PhotoService) UploadPhoto(ctx context.Context, file io.Reader, size int
 }
 
 func (s *PhotoService) GetPhotoURL(objectName string, expiry time.Duration) (string, error) {
-	url, err := s.minioClient.PresignedGetObject(
-		context.Background(),
-		s.bucket,
-		objectName,
-		expiry,
-		nil,
-	)
-	if err != nil {
-		return "", fmt.Errorf("failed to generate presigned URL: %w", err)
+
+	PublicPrefix := "pub"
+	PublicHost := "http://localhost"
+
+	if strings.HasPrefix(objectName, PublicPrefix) {
+		publicURL := fmt.Sprintf("%s/%s/%s", PublicHost, s.bucket, objectName)
+
+		return publicURL, nil
 	}
 
-	return url.String(), nil
+	return "hui", nil
 }
