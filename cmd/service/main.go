@@ -87,6 +87,7 @@ func main() {
 			echo.HeaderOrigin,
 			echo.HeaderContentType,
 			echo.HeaderAccept,
+			echo.HeaderAuthorization,
 		},
 	}))
 
