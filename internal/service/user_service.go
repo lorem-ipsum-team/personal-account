@@ -17,13 +17,13 @@ func NewUserService(storage storage.UserStorage) *UserService {
 	return &UserService{storage: storage}
 }
 
-func (s *UserService) CreateUser(name, surname string, aboutMyself *string, gender *models.UserGender) (*models.User, error) {
+func (s *UserService) CreateUser(id uuid.UUID, name, surname string, aboutMyself *string, gender *models.UserGender) (*models.User, error) {
 	if name == "" || surname == "" {
 		return nil, errors.New("name and surname are required")
 	}
 
 	user := &models.User{
-		ID:          uuid.New(),
+		ID:          id,
 		Name:        name,
 		Surname:     surname,
 		AboutMyself: aboutMyself,

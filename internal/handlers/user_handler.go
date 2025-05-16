@@ -22,6 +22,7 @@ func NewUserHandler(service *service.UserService) *UserHandler {
 
 func (h *UserHandler) CreateUser(c echo.Context) error {
 	var req struct {
+		Id          uuid.UUID          `json:"id"`
 		Name        string             `json:"name"`
 		Surname     string             `json:"surname"`
 		AboutMyself *string            `json:"about_myself,omitempty"`
@@ -32,7 +33,7 @@ func (h *UserHandler) CreateUser(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, errorResponse("Invalid request body"))
 	}
 
-	user, err := h.service.CreateUser(req.Name, req.Surname, req.AboutMyself, req.Gender)
+	user, err := h.service.CreateUser(req.Id, req.Name, req.Surname, req.AboutMyself, req.Gender)
 	if err != nil {
 		return errorResponseWithCode(c, err, http.StatusBadRequest)
 	}
