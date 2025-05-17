@@ -10,7 +10,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/kerilOvs/profile_sevice/internal/config"
-	"github.com/kerilOvs/profile_sevice/internal/models"
+
+	// "github.com/kerilOvs/profile_sevice/internal/models"
 
 	//"github.com/kerilOvs/profile_sevice/logger"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -124,15 +125,15 @@ func (r *Repo) PublishTags(ctx context.Context, tags Tags) error {
 	return nil
 }
 
-type Photos struct {
-	UserID     uuid.UUID
-	Photos_url []string
+type Photo struct {
+	ID   uuid.UUID `json:"id"`
+	Path string    `json:"image_url"`
 }
 
-func (r *Repo) PublishPhotos(ctx context.Context, photos Photos) error {
-	photosDto := Photos{
-		UserID:     uuid.UUID(photos.UserID),
-		Photos_url: photos.Photos_url,
+func (r *Repo) PublishPhoto(ctx context.Context, photos Photo) error {
+	photosDto := Photo{
+		ID:   uuid.UUID(photos.ID),
+		Path: photos.Path,
 	}
 
 	body, err := json.Marshal(photosDto)
@@ -161,16 +162,14 @@ func (r *Repo) PublishPhotos(ctx context.Context, photos Photos) error {
 }
 
 type UserAnket struct {
-	UserID    uuid.UUID
-	BirthDate time.Time
-	Gender    models.UserGender
+	ID          uuid.UUID `json:"user_id"`
+	Description string    `json:"description"`
 }
 
 func (r *Repo) PublishAnket(ctx context.Context, anket UserAnket) error {
 	anketDto := UserAnket{
-		UserID:    uuid.UUID(anket.UserID),
-		BirthDate: anket.BirthDate,
-		Gender:    anket.Gender,
+		ID:          uuid.UUID(anket.ID),
+		Description: anket.Description,
 	}
 
 	body, err := json.Marshal(anketDto)
