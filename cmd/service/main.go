@@ -4,8 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log"
+
+	//"log/slog"
 	"net/http"
 	"strconv"
+
+	//"os"
 	"time"
 
 	"gorm.io/driver/postgres"
@@ -19,10 +23,17 @@ import (
 	"github.com/kerilOvs/profile_sevice/internal/models"
 	"github.com/kerilOvs/profile_sevice/internal/service"
 	"github.com/kerilOvs/profile_sevice/internal/storage/minio"
+	"github.com/kerilOvs/profile_sevice/internal/storage/rabbit"
+
+	//"github.com/kerilOvs/profile_sevice/logger"
 	postgresstorage "github.com/kerilOvs/profile_sevice/internal/storage/postgres"
 )
 
 func main() {
+
+	//logLevel := os.Getenv("LOG_LEVEL")
+	//logFormat := os.Getenv("LOG_FORMAT")
+	//log := logger.Init(logFormat, logLevel)
 	// 1. Загрузка конфигурации
 	cfg, err := config.ReadConfig()
 	if err != nil {
@@ -64,9 +75,17 @@ func main() {
 	}
 	log.Println("Successfully connected to MinIO")
 
+	// 5.
+	rabbitRepo, err := rabbit.New(ctx, &cfg.Rabbit)
+	if err != nil {
+		log.Fatal(ctx, "failed to create rabbit_repo", err)
+
+		return
+	}
+
 	// 5. Инициализация слоев приложения
 	userStorage := postgresstorage.NewUserPostgresStorage(db)
-	userService := service.NewUserService(userStorage)
+	userService := service.NewUserService(userStorage, rabbitRepo)
 
 	// Инициализация фото сервиса
 	photoService := service.NewPhotoService(minioClient.Client, cfg.Minio.Bucket)

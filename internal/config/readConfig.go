@@ -35,6 +35,11 @@ type RabbitConfig struct {
 	QueueAnketName string `yaml:"queue_anket_name" env:"RABBIT_ANKET_NAME"`
 }
 
+type LogConfig struct {
+	LogLevel  string `yaml:"endpoint" env:"MINIO_ENDPOINT"`
+	LogFormat string `yaml:"queue_photo_name" env:"RABBIT_PHOTO_NAME"`
+}
+
 type Config struct {
 	Database DBConfig     `yaml:"database"`
 	Server   ServerConfig `yaml:"server"`
