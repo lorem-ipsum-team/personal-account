@@ -41,14 +41,18 @@ func (s *UserService) CreateUser(id uuid.UUID, name, surname string, aboutMyself
 	}
 
 	anket := rabbit.UserAnket{
-		ID:          id,
-		Description: *aboutMyself,
+		ID:        id,
+		Gender:    *gender,
+		BirthDate: "01/01/2000",
 	}
 
 	// rabbit.PublishAnket()
 	ctx := context.TODO()
 
-	s.rabbitRepo.PublishAnket(ctx, anket)
+	err := s.rabbitRepo.PublishAnket(ctx, anket)
+	if err != nil {
+		return nil, err
+	}
 
 	return user, nil
 }
@@ -133,18 +137,50 @@ func (s *UserService) UpdateUserProfile(id uuid.UUID, updates models.UserProfile
 		updateFields["jung_last_attempt"] = now
 	}
 
-	if updates.AboutMyself != nil {
+	if updates.BirthDate != nil && updates.Gender != nil {
+		temp := *updates.BirthDate
+		anket := rabbit.UserAnket{
+			ID:        id,
+			Gender:    *updates.Gender,
+			BirthDate: temp.Format("01/01/2000"),
+		}
+		ctx := context.TODO()
+		err := s.rabbitRepo.PublishAnket(ctx, anket)
+		if err != nil {
+			return err
+		}
+	} else if updates.BirthDate != nil {
+		uzer, err := s.GetUserByID(id)
+		if err != nil {
+			return err
+		}
+		temp := *updates.BirthDate
+		anket := rabbit.UserAnket{
+			ID:        id,
+			Gender:    *uzer.Gender,
+			BirthDate: temp.Format("01/01/2000"),
+		}
+		ctx := context.TODO()
+		err = s.rabbitRepo.PublishAnket(ctx, anket)
+		if err != nil {
+			return err
+		}
+	} else if updates.Gender != nil {
 
 		uzer, err := s.GetUserByID(id)
 		if err != nil {
 			return err
 		}
 		anket := rabbit.UserAnket{
-			ID:          id,
-			Description: *uzer.AboutMyself,
+			ID:        id,
+			Gender:    *updates.Gender,
+			BirthDate: uzer.BirthDate.Format("01/01/2000"),
 		}
 		ctx := context.TODO()
-		s.rabbitRepo.PublishAnket(ctx, anket)
+		err = s.rabbitRepo.PublishAnket(ctx, anket)
+		if err != nil {
+			return err
+		}
 	}
 
 	if len(updateFields) > 0 {
@@ -196,7 +232,10 @@ func (s *UserService) SetPrimaryPhoto(userID, photoID uuid.UUID) error {
 	}
 
 	ctx := context.TODO()
-	s.rabbitRepo.PublishPhoto(ctx, photo)
+	err = s.rabbitRepo.PublishPhoto(ctx, photo)
+	if err != nil {
+		return err
+	}
 
 	return s.storage.SetPrimaryPhoto(userID, photoURL)
 }
@@ -214,6 +253,21 @@ func (s *UserService) AddUserTag(userID uuid.UUID, tagValue string) (*models.Use
 
 	if err := s.storage.AddTag(tag); err != nil {
 		return nil, err
+	}
+
+	tags_list, err := s.GetUserTags(userID)
+	if err != nil {
+		return nil, err
+	}
+	result := ConcatenateTagValues(tags_list)
+	tags := rabbit.Tags{
+		UserID: userID,
+		Tags:   result,
+	}
+	ctx := context.TODO()
+	err = s.rabbitRepo.PublishTags(ctx, tags)
+	if err != nil {
+		return tag, err
 	}
 
 	return tag, nil
@@ -268,7 +322,10 @@ func (s *UserService) RemoveUserPhoto(userID, photoID uuid.UUID) error {
 		}
 
 		ctx := context.TODO()
-		s.rabbitRepo.PublishPhoto(ctx, photo)
+		err = s.rabbitRepo.PublishPhoto(ctx, photo)
+		if err != nil {
+			return err
+		}
 	} else {
 		photos, err := s.storage.GetUserPhotos(userID)
 		if err != nil {
@@ -284,7 +341,10 @@ func (s *UserService) RemoveUserPhoto(userID, photoID uuid.UUID) error {
 		}
 
 		ctx := context.TODO()
-		s.rabbitRepo.PublishPhoto(ctx, photo)
+		err = s.rabbitRepo.PublishPhoto(ctx, photo)
+		if err != nil {
+			return err
+		}
 	}
 
 	return s.storage.RemovePhoto(userID, photoID)
@@ -295,5 +355,43 @@ func (s *UserService) GetUserTags(userID uuid.UUID) ([]*models.UserTag, error) {
 }
 
 func (s *UserService) RemoveUserTag(userID, tagID uuid.UUID) error {
-	return s.storage.RemoveTag(userID, tagID)
+	err := s.storage.RemoveTag(userID, tagID)
+	if err != nil {
+		return err
+	}
+
+	tags_list, err := s.GetUserTags(userID)
+	if err != nil {
+		return err
+	}
+	result := ConcatenateTagValues(tags_list)
+	tags := rabbit.Tags{
+		UserID: userID,
+		Tags:   result,
+	}
+	ctx := context.TODO()
+	err = s.rabbitRepo.PublishTags(ctx, tags)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func ConcatenateTagValues(tags []*models.UserTag) string {
+	if len(tags) == 0 {
+		return ""
+	}
+
+	var builder strings.Builder
+	for i, tag := range tags {
+		if tag == nil { // Пропускаем nil-указатели
+			continue
+		}
+		if i > 0 && builder.Len() > 0 {
+			builder.WriteString(" ")
+		}
+		builder.WriteString(tag.Value)
+	}
+	return builder.String()
 }

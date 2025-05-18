@@ -9,21 +9,30 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/kerilOvs/profile_sevice/internal/config"
+	"github.com/kerilOvs/profile_sevice/internal/models"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 const (
-	queueName  = "swipes"
 	msgTimeout = 5 * time.Second
 )
 
 type Repo struct {
 	conn    *amqp.Connection
 	channel *amqp.Channel
+	queues  map[string]amqp.Queue // Храним информацию об очередях
+
+	tagsQueueName   string
+	photosQueueName string
+	anketsQueueName string
 }
 
 func New(ctx context.Context, cfg *config.RabbitConfig) (*Repo, error) {
+	tagsQueueName := cfg.QueueTagsName
+	photosQueueName := cfg.QueuePhotoName
+	anketsQueueName := cfg.QueueAnketName
+
 	conn, err := amqp.Dial(cfg.Url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to Rabbit: %w", err)
@@ -34,26 +43,59 @@ func New(ctx context.Context, cfg *config.RabbitConfig) (*Repo, error) {
 		return nil, fmt.Errorf("failed to open a channel: %w", err)
 	}
 
-	_, err = channel.QueueDeclare(
-		queueName,
-		false,
-		false,
-		false,
-		false,
-		nil,
+	// Объявляем три разные очереди
+	queues := make(map[string]amqp.Queue)
+
+	tagsQueue, err := channel.QueueDeclare(
+		tagsQueueName,
+		false, // durable
+		false, // delete when unused
+		false, // exclusive
+		false, // no-wait
+		nil,   // arguments
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to declare a queue: %w", err)
+		return nil, fmt.Errorf("failed to declare tags queue: %w", err)
 	}
+	queues[tagsQueueName] = tagsQueue
+
+	photosQueue, err := channel.QueueDeclare(
+		photosQueueName,
+		false, // durable
+		false, // delete when unused
+		false, // exclusive
+		false, // no-wait
+		nil,   // arguments
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to declare photos queue: %w", err)
+	}
+	queues[photosQueueName] = photosQueue
+
+	anketsQueue, err := channel.QueueDeclare(
+		anketsQueueName,
+		false, // durable
+		false, // delete when unused
+		false, // exclusive
+		false, // no-wait
+		nil,   // arguments
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to declare ankets queue: %w", err)
+	}
+	queues[anketsQueueName] = anketsQueue
 
 	repo := &Repo{
-		conn:    conn,
-		channel: channel,
+		conn:            conn,
+		channel:         channel,
+		queues:          queues,
+		tagsQueueName:   tagsQueueName,
+		photosQueueName: photosQueueName,
+		anketsQueueName: anketsQueueName,
 	}
 
 	go func() {
 		<-ctx.Done()
-
 		_ = repo.Close()
 	}()
 
@@ -74,12 +116,12 @@ func (r *Repo) Close() error {
 
 type Tags struct {
 	UserID uuid.UUID
-	Tags   []string
+	Tags   string
 }
 
 func (r *Repo) PublishTags(ctx context.Context, tags Tags) error {
 	tagsDto := Tags{
-		UserID: uuid.UUID(tags.UserID),
+		UserID: tags.UserID,
 		Tags:   tags.Tags,
 	}
 
@@ -93,33 +135,33 @@ func (r *Repo) PublishTags(ctx context.Context, tags Tags) error {
 
 	err = r.channel.PublishWithContext(
 		ctx,
-		"",
-		queueName,
-		false,
-		false,
-		amqp.Publishing{ //nolint:exhaustruct
+		"",              // exchange
+		r.tagsQueueName, // routing key (имя очереди)
+		false,           // mandatory
+		false,           // immediate
+		amqp.Publishing{
 			ContentType: "application/json",
 			Body:        body,
 		})
 	if err != nil {
-		return fmt.Errorf("failed to publish swipe: %w", err)
+		return fmt.Errorf("failed to publish tags: %w", err)
 	}
 
 	return nil
 }
 
 type Photo struct {
-	ID   uuid.UUID `json:"id"`
+	ID   uuid.UUID `json:"user_id"`
 	Path string    `json:"image_url"`
 }
 
-func (r *Repo) PublishPhoto(ctx context.Context, photos Photo) error {
-	photosDto := Photo{
-		ID:   uuid.UUID(photos.ID),
-		Path: photos.Path,
+func (r *Repo) PublishPhoto(ctx context.Context, photo Photo) error {
+	photoDto := Photo{
+		ID:   photo.ID,
+		Path: photo.Path,
 	}
 
-	body, err := json.Marshal(photosDto)
+	body, err := json.Marshal(photoDto)
 	if err != nil {
 		return fmt.Errorf("failed to marshal message: %w", err)
 	}
@@ -129,30 +171,33 @@ func (r *Repo) PublishPhoto(ctx context.Context, photos Photo) error {
 
 	err = r.channel.PublishWithContext(
 		ctx,
-		"",
-		queueName,
-		false,
-		false,
-		amqp.Publishing{ //nolint:exhaustruct
+		"",                // exchange
+		r.photosQueueName, // routing key (имя очереди)
+		false,             // mandatory
+		false,             // immediate
+		amqp.Publishing{
 			ContentType: "application/json",
 			Body:        body,
 		})
 	if err != nil {
-		return fmt.Errorf("failed to publish swipe: %w", err)
+		return fmt.Errorf("failed to publish photo: %w", err)
 	}
 
 	return nil
 }
 
 type UserAnket struct {
-	ID          uuid.UUID `json:"user_id"`
-	Description string    `json:"description"`
+	ID        uuid.UUID         `json:"user_id"`
+	Gender    models.UserGender `json:"gender"`
+	BirthDate string            `json:"birth_date"`
+	//Description string    `json:"description"`
 }
 
 func (r *Repo) PublishAnket(ctx context.Context, anket UserAnket) error {
 	anketDto := UserAnket{
-		ID:          uuid.UUID(anket.ID),
-		Description: anket.Description,
+		ID:        anket.ID,
+		Gender:    anket.Gender,
+		BirthDate: anket.BirthDate,
 	}
 
 	body, err := json.Marshal(anketDto)
@@ -165,16 +210,16 @@ func (r *Repo) PublishAnket(ctx context.Context, anket UserAnket) error {
 
 	err = r.channel.PublishWithContext(
 		ctx,
-		"",
-		queueName,
-		false,
-		false,
-		amqp.Publishing{ //nolint:exhaustruct
+		"",                // exchange
+		r.anketsQueueName, // routing key (имя очереди)
+		false,             // mandatory
+		false,             // immediate
+		amqp.Publishing{
 			ContentType: "application/json",
 			Body:        body,
 		})
 	if err != nil {
-		return fmt.Errorf("failed to publish swipe: %w", err)
+		return fmt.Errorf("failed to publish anket: %w", err)
 	}
 
 	return nil
