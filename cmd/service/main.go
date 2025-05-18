@@ -68,17 +68,16 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	log.Info("Connection to minio...")
+	log.Info("Connection to minio")
 	minioClient, err := minio.New(ctx, cfg.Minio)
 	if err != nil {
 		log.Error("Failed to initialize MinIO client:", slog.Any("error", err))
 	}
-	log.Println("Successfully connected to MinIO")
 
-	// 5.
+	log.Info("Connecting to Rabbit")
 	rabbitRepo, err := rabbit.New(ctx, &cfg.Rabbit)
 	if err != nil {
-		log.Fatal(ctx, "failed to create rabbit_repo", err)
+		log.Error("failed to create rabbit_repo", slog.Any("error", err))
 
 		return
 	}

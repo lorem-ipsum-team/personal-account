@@ -31,7 +31,7 @@ type MinioConfig struct {
 }
 
 type RabbitConfig struct {
-	Url            string `yaml:"endpoint" env:"MINIO_ENDPOINT"`
+	Url            string `yaml:"url" env:"RABBIT_URL"`
 	QueuePhotoName string `yaml:"queue_photo_name" env:"RABBIT_PHOTO_NAME"`
 	QueueTagsName  string `yaml:"queue_tags_name" env:"RABBIT_TAGS_NAME"`
 	QueueAnketName string `yaml:"queue_anket_name" env:"RABBIT_ANKET_NAME"`
@@ -67,6 +67,12 @@ func (c Config) LogValue() slog.Value {
 			slog.Any("secret_key", logger.Secret(c.Minio.SecretKey)),
 			slog.String("bucket", c.Minio.Bucket),
 			slog.Bool("use_ssl", c.Minio.UseSSL),
+		),
+		slog.Group("rabbit",
+			slog.String("url", c.Rabbit.Url),
+			slog.String("queue_photo_name", c.Rabbit.QueuePhotoName),
+			slog.String("queue_tags_name", c.Rabbit.QueueTagsName),
+			slog.String("queue_anket_name", c.Rabbit.QueueAnketName),
 		),
 	)
 }
