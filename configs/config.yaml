@@ -14,7 +14,7 @@ minio:
   secure: false
   use_ssl: false
 rabbit:
-  endpoint: ""
+  url: ""
   queue_photo_name: ""
   queue_tags_name: ""
   queue_anket_name: ""

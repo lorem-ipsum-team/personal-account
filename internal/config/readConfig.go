@@ -1,9 +1,11 @@
 package config
 
 import (
+	"log/slog"
 	"os"
 
 	errors "github.com/kerilOvs/profile_sevice/internal/errorsExt"
+	"github.com/kerilOvs/profile_sevice/pkg/logger"
 
 	yaml "gopkg.in/yaml.v3"
 )
@@ -29,7 +31,7 @@ type MinioConfig struct {
 }
 
 type RabbitConfig struct {
-	Url            string `yaml:"endpoint" env:"MINIO_ENDPOINT"`
+	Url            string `yaml:"url" env:"RABBIT_URL"`
 	QueuePhotoName string `yaml:"queue_photo_name" env:"RABBIT_PHOTO_NAME"`
 	QueueTagsName  string `yaml:"queue_tags_name" env:"RABBIT_TAGS_NAME"`
 	QueueAnketName string `yaml:"queue_anket_name" env:"RABBIT_ANKET_NAME"`
@@ -47,6 +49,33 @@ type Config struct {
 	Rabbit   RabbitConfig `yaml:"rabbit"`
 }
 
+func (c Config) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.Group("database",
+			slog.String("host", c.Database.Host),
+			slog.Int("port", c.Database.Port),
+			slog.String("user", c.Database.User),
+			slog.Any("password", logger.Secret(c.Database.Password)),
+			slog.String("name", c.Database.User),
+		),
+		slog.Group("server",
+			slog.Int("port", c.Server.Port),
+		),
+		slog.Group("minio",
+			slog.String("endpoint", c.Minio.Endpoint),
+			slog.Any("access_key", logger.Secret(c.Minio.AccessKey)),
+			slog.Any("secret_key", logger.Secret(c.Minio.SecretKey)),
+			slog.String("bucket", c.Minio.Bucket),
+			slog.Bool("use_ssl", c.Minio.UseSSL),
+		),
+		slog.Group("rabbit",
+			slog.String("url", c.Rabbit.Url),
+			slog.String("queue_photo_name", c.Rabbit.QueuePhotoName),
+			slog.String("queue_tags_name", c.Rabbit.QueueTagsName),
+			slog.String("queue_anket_name", c.Rabbit.QueueAnketName),
+		),
+	)
+}
 func ReadConfig() (Config, error) {
 
 	var config Config
