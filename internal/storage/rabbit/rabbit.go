@@ -5,15 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 
-	//"log/slog"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/kerilOvs/profile_sevice/internal/config"
 
-	// "github.com/kerilOvs/profile_sevice/internal/models"
-
-	//"github.com/kerilOvs/profile_sevice/logger"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -25,19 +21,9 @@ const (
 type Repo struct {
 	conn    *amqp.Connection
 	channel *amqp.Channel
-	//log     *slog.Logger
 }
 
-/*type Swipe struct {
-	Init   uuid.UUID `json:"init"`
-	Target uuid.UUID `json:"target"`
-	Like   bool      `json:"like"`
-}*/
-
 func New(ctx context.Context, cfg *config.RabbitConfig) (*Repo, error) {
-	//log = log.WithGroup("rabbit_repo")
-	//log.Info("connect to rabbit", slog.Any("connection string", logger.Secret(cfg.Url)))
-
 	conn, err := amqp.Dial(cfg.Url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to Rabbit: %w", err)
@@ -63,7 +49,6 @@ func New(ctx context.Context, cfg *config.RabbitConfig) (*Repo, error) {
 	repo := &Repo{
 		conn:    conn,
 		channel: channel,
-		//log:     log,
 	}
 
 	go func() {
@@ -76,8 +61,6 @@ func New(ctx context.Context, cfg *config.RabbitConfig) (*Repo, error) {
 }
 
 func (r *Repo) Close() error {
-	// r.log.Info("closing rabbit_repo")
-
 	if err := r.channel.Close(); err != nil {
 		return fmt.Errorf("failed to close amqp channel: %w", err)
 	}

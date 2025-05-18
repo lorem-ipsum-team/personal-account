@@ -6,6 +6,7 @@ RUN go mod download -x
 
 COPY cmd ./cmd
 COPY internal ./internal
+COPY pkg ./pkg
 
 RUN CGO_ENABLED=0 GOOS=linux go build -v -o ./out/service ./cmd/service/main.go
 
