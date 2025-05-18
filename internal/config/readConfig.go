@@ -1,9 +1,11 @@
 package config
 
 import (
+	"log/slog"
 	"os"
 
 	errors "github.com/kerilOvs/profile_sevice/internal/errorsExt"
+	"github.com/kerilOvs/profile_sevice/pkg/logger"
 
 	yaml "gopkg.in/yaml.v3"
 )
@@ -47,6 +49,27 @@ type Config struct {
 	Rabbit   RabbitConfig `yaml:"rabbit"`
 }
 
+func (c Config) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.Group("database",
+			slog.String("host", c.Database.Host),
+			slog.Int("port", c.Database.Port),
+			slog.String("user", c.Database.User),
+			slog.Any("password", logger.Secret(c.Database.Password)),
+			slog.String("name", c.Database.User),
+		),
+		slog.Group("server",
+			slog.Int("port", c.Server.Port),
+		),
+		slog.Group("minio",
+			slog.String("endpoint", c.Minio.Endpoint),
+			slog.Any("access_key", logger.Secret(c.Minio.AccessKey)),
+			slog.Any("secret_key", logger.Secret(c.Minio.SecretKey)),
+			slog.String("bucket", c.Minio.Bucket),
+			slog.Bool("use_ssl", c.Minio.UseSSL),
+		),
+	)
+}
 func ReadConfig() (Config, error) {
 
 	var config Config

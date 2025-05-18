@@ -3,9 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
-
-	//"log/slog"
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -27,6 +25,7 @@ import (
 
 	//"github.com/kerilOvs/profile_sevice/logger"
 	postgresstorage "github.com/kerilOvs/profile_sevice/internal/storage/postgres"
+	"github.com/kerilOvs/profile_sevice/pkg/logger"
 )
 
 func main() {
@@ -35,12 +34,14 @@ func main() {
 	//logFormat := os.Getenv("LOG_FORMAT")
 	//log := logger.Init(logFormat, logLevel)
 	// 1. Загрузка конфигурации
+	log := logger.Init("text", "debug")
 	cfg, err := config.ReadConfig()
 	if err != nil {
-		log.Fatal("Failed to read config:", err)
+		log.Error("Failed to read config:", slog.Any("error", err))
 	}
+	log.Info("Read config", slog.Any("config", cfg))
 
-	// 2. Подключение к базе данных
+	log.Info("Connecting to db...")
 	dsn := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
 		cfg.Database.Host,
@@ -49,29 +50,28 @@ func main() {
 		cfg.Database.Dbname,
 		strconv.Itoa(cfg.Database.Port),
 	)
-	fmt.Println(cfg)
-
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		log.Fatal("Failed to connect to database:", err)
+		log.Error("Failed to connect to database:", slog.Any("error", err))
 	}
 
-	// 3. Автомиграция
+	log.Info("Running migrations...")
 	if err := db.AutoMigrate(
 		&models.User{},
 		&models.UserPhoto{},
 		&models.UserTag{},
 	); err != nil {
-		log.Fatal("Failed to migrate database:", err)
+		log.Error("Failed to migrate database:", slog.Any("error", err))
 	}
 
 	// 4. Инициализация MinIO клиента
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	log.Info("Connection to minio...")
 	minioClient, err := minio.New(ctx, cfg.Minio)
 	if err != nil {
-		log.Fatal("Failed to initialize MinIO client:", err)
+		log.Error("Failed to initialize MinIO client:", slog.Any("error", err))
 	}
 	log.Println("Successfully connected to MinIO")
 
@@ -93,6 +93,7 @@ func main() {
 
 	// 6. Настройка Echo сервера
 	e := echo.New()
+	e.Use(handlers.Logging(log))
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins: []string{"http://localhost:3000"},
 		AllowMethods: []string{
@@ -116,8 +117,8 @@ func main() {
 
 	// 8. Запуск сервера
 	serverAddr := ":" + strconv.Itoa(cfg.Server.Port)
-	log.Printf("Server started on %s", serverAddr)
-	log.Fatal(e.Start(serverAddr))
+	log.Info("Server started", slog.String("port", serverAddr))
+	log.Error("Server stopped", slog.Any("error", e.Start(serverAddr)))
 }
 
 func registerRoutes(e *echo.Echo, userHandler *handlers.UserHandler, photoHandler *handlers.PhotoHandler) {
