@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/caarlos0/env"
 	errors "github.com/kerilOvs/profile_sevice/internal/errorsExt"
 	"github.com/kerilOvs/profile_sevice/pkg/logger"
 
@@ -80,14 +81,21 @@ func ReadConfig() (Config, error) {
 
 	var config Config
 
-	data, err := os.ReadFile(fileName)
-	if err != nil {
-		return config, errors.ErrorLocate(err)
-	}
+	if fileName == "" {
+		data, err := os.ReadFile(fileName)
+		if err != nil {
+			return config, errors.ErrorLocate(err)
+		}
 
-	err = yaml.Unmarshal(data, &config)
-	if err != nil {
-		return config, errors.ErrorLocate(err)
+		err = yaml.Unmarshal(data, &config)
+		if err != nil {
+			return config, errors.ErrorLocate(err)
+		}
+	} else {
+		err := env.Parse(&config)
+		if err != nil {
+			return err
+		}
 	}
 	return config, nil
 }
