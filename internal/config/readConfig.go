@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/caarlos0/env"
+	"github.com/caarlos0/env/v11"
 	errors "github.com/kerilOvs/profile_sevice/internal/errorsExt"
 	"github.com/kerilOvs/profile_sevice/pkg/logger"
 
@@ -20,7 +20,7 @@ type DBConfig struct {
 }
 
 type ServerConfig struct {
-	Port int `yaml:"port"`
+	Port int `yaml:"port" env:"SERVER_PORT"`
 }
 
 type MinioConfig struct {
@@ -79,7 +79,10 @@ func (c Config) LogValue() slog.Value {
 }
 func ReadConfig() (Config, error) {
 
-	var config Config
+	config := Config{
+		Database: DBConfig{Port: 5432},
+		Server:   ServerConfig{Port: 8080},
+	}
 
 	if fileName == "" {
 		data, err := os.ReadFile(fileName)
@@ -94,7 +97,7 @@ func ReadConfig() (Config, error) {
 	} else {
 		err := env.Parse(&config)
 		if err != nil {
-			return err
+			return config, err
 		}
 	}
 	return config, nil
