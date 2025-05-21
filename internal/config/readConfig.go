@@ -11,11 +11,11 @@ import (
 )
 
 type DBConfig struct {
-	Host     string `yaml:"host"`
-	Port     int    `yaml:"port"`
-	User     string `yaml:"user"`
-	Password string `yaml:"password"`
-	Dbname   string `yaml:"dbname"`
+	Host     string `yaml:"host" env:"DB_HOST"`
+	Port     int    `yaml:"port" env:"DB_PORT"`
+	User     string `yaml:"user" env:"DB_USER"`
+	Password string `yaml:"password" env:"DB_PASSWORD"`
+	Dbname   string `yaml:"dbname" env:"DB_NAME"`
 }
 
 type ServerConfig struct {
