@@ -141,4 +141,6 @@ func registerRoutes(e *echo.Echo, userHandler *handlers.UserHandler, photoHandle
 	// Фото маршруты
 	e.POST("/users/:id/addphoto", photoHandler.UploadPhoto) // + по айди юзера добавляет фотку
 	e.GET("/photos/:id", photoHandler.GetPhoto)             // + по айди !фото! отдает фотку
+
+	e.GET("/healthy", userHandler.Healthy)
 }

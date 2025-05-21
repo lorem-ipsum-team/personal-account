@@ -458,6 +458,10 @@ func (h *UserHandler) RemoveUserTag(c echo.Context) error {
 	return c.NoContent(http.StatusNoContent)
 }
 
+func (h *UserHandler) Healthy(c echo.Context) error {
+	return nil
+}
+
 func errorResponse(msg string) map[string]interface{} {
 	return map[string]interface{}{"error": msg}
 }
