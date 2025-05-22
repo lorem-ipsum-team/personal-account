@@ -155,6 +155,10 @@ func (s *UserService) UpdateUserProfile(id uuid.UUID, updates models.UserProfile
 			return err
 		}
 		temp := *updates.BirthDate
+		if uzer.Gender == nil {
+			female := models.GenderFemale
+			uzer.Gender = &female
+		}
 		anket := rabbit.UserAnket{
 			ID:        id,
 			Gender:    *uzer.Gender,
@@ -170,6 +174,9 @@ func (s *UserService) UpdateUserProfile(id uuid.UUID, updates models.UserProfile
 		uzer, err := s.GetUserByID(id)
 		if err != nil {
 			return err
+		}
+		if uzer.BirthDate == nil {
+			uzer.BirthDate = &time.Time{}
 		}
 		anket := rabbit.UserAnket{
 			ID:        id,
