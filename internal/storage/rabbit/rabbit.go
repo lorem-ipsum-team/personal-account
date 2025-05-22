@@ -93,12 +93,6 @@ func New(ctx context.Context, cfg *config.RabbitConfig) (*Repo, error) {
 		photosQueueName: photosQueueName,
 		anketsQueueName: anketsQueueName,
 	}
-
-	go func() {
-		<-ctx.Done()
-		_ = repo.Close()
-	}()
-
 	return repo, nil
 }
 
