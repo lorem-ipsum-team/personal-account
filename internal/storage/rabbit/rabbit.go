@@ -109,8 +109,8 @@ func (r *Repo) Close() error {
 }
 
 type Tags struct {
-	UserID uuid.UUID
-	Tags   string
+	UserID uuid.UUID `json:"user_id"`
+	Tags   string `json:"tags"`
 }
 
 func (r *Repo) PublishTags(ctx context.Context, tags Tags) error {
