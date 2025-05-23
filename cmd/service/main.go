@@ -55,6 +55,16 @@ func main() {
 		log.Error("Failed to connect to database:", slog.Any("error", err))
 	}
 
+	sqlDB, err := db.DB()
+	if err != nil {
+		panic("failed to get underlying sql.DB")
+	}
+
+	// Настройка пула соединений
+	sqlDB.SetMaxIdleConns(10)           // Максимальное количество бездействующих соединений
+	sqlDB.SetMaxOpenConns(100)          // Максимальное количество открытых соединений
+	sqlDB.SetConnMaxLifetime(time.Hour) // Максимальное время жизни соединения
+
 	log.Info("Running migrations...")
 	if err := db.AutoMigrate(
 		&models.User{},
