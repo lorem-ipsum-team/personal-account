@@ -111,6 +111,7 @@ func main() {
 			http.MethodPut,
 			http.MethodDelete,
 			http.MethodPatch,
+			http.MethodOptions,
 		},
 		AllowHeaders: []string{
 			echo.HeaderOrigin,
@@ -118,6 +119,7 @@ func main() {
 			echo.HeaderAccept,
 			echo.HeaderAuthorization,
 		},
+		AllowCredentials: true,
 	}))
 
 	// 7. Регистрация маршрутов
