@@ -40,6 +40,10 @@ func (s *UserService) CreateUser(id uuid.UUID, name, surname string, aboutMyself
 		return nil, err
 	}
 
+	if gender == nil {
+		female := models.GenderFemale
+		gender = &female
+	}
 	anket := rabbit.UserAnket{
 		ID:        id,
 		Gender:    *gender,
