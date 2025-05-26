@@ -97,7 +97,7 @@ func main() {
 	userService := service.NewUserService(userStorage, rabbitRepo)
 
 	// Инициализация фото сервиса
-	photoService := service.NewPhotoService(minioClient.Client, cfg.Minio.Bucket)
+	photoService := service.NewPhotoService(minioClient.Client, cfg.Minio)
 	photoHandler := handlers.NewPhotoHandler(userService, photoService)
 
 	// 6. Настройка Echo сервера

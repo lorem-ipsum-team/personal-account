@@ -29,6 +29,8 @@ type MinioConfig struct {
 	SecretKey string `yaml:"secret_key" env:"MINIO_SECRET_KEY"`
 	Bucket    string `yaml:"bucket" env:"MINIO_BUCKET"`
 	UseSSL    bool   `yaml:"use_ssl" env:"MINIO_USE_SSL"`
+	Host      string `yaml:"host" env:"MINIO_HOST"`
+	PubPrefix string `yaml:"pub_prefix" env:"MINIO_PUB_PREFIX"`
 }
 
 type RabbitConfig struct {

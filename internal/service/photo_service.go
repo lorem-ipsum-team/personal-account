@@ -10,6 +10,8 @@ import (
 	//"path/filepath"
 	"time"
 
+	"github.com/kerilOvs/profile_sevice/internal/config"
+
 	"github.com/google/uuid"
 	"github.com/minio/minio-go/v7"
 )
@@ -17,18 +19,22 @@ import (
 type PhotoService struct {
 	minioClient *minio.Client
 	bucket      string
+	pubPrefix   string
+	host        string
 }
 
-func NewPhotoService(client *minio.Client, bucket string) *PhotoService {
+func NewPhotoService(client *minio.Client, cfg config.MinioConfig) *PhotoService {
 	return &PhotoService{
 		minioClient: client,
-		bucket:      bucket,
+		bucket:      cfg.Bucket,
+		pubPrefix:   cfg.PubPrefix,
+		host:        cfg.Host,
 	}
 }
 
 func (s *PhotoService) UploadPhoto(ctx context.Context, file io.Reader, size int64) (string, error) {
 	// Генерируем уникальное имя файла с правильным расширением
-	objectName := "pub/" + uuid.New().String() + ".jpg"
+	objectName := s.pubPrefix + "/" + uuid.New().String() + ".jpg"
 
 	_, err := s.minioClient.PutObject(
 		ctx,
@@ -50,8 +56,8 @@ func (s *PhotoService) UploadPhoto(ctx context.Context, file io.Reader, size int
 
 func (s *PhotoService) GetPhotoURL(objectName string, expiry time.Duration) (string, error) {
 
-	PublicPrefix := "pub"
-	PublicHost := "http://localhost:9000"
+	PublicPrefix := s.pubPrefix
+	PublicHost := s.pubPrefix
 
 	if strings.HasPrefix(objectName, PublicPrefix) {
 		publicURL := fmt.Sprintf("%s/%s/%s", PublicHost, s.bucket, objectName)

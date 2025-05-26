@@ -13,8 +13,10 @@ minio:
   bucket: "mybucket"
   secure: false
   use_ssl: false
+  host: "http://localhost:9000"
+  pub_prefix: "pub"
 rabbit:
-  url: ""
+  url: "rabbitmq:5672"
   queue_photo_name: ""
   queue_tags_name: ""
   queue_anket_name: ""
