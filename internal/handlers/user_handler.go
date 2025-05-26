@@ -69,20 +69,6 @@ func (h *UserHandler) DeleteUser(c echo.Context) error {
 }
 
 func (h *UserHandler) GetUserById(c echo.Context) error {
-	requestedID, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, errorResponse("Invalid user ID"))
-	}
-
-	tokenUserID, err := getJWTUserID(c.Request())
-	if err != nil {
-		return c.JSON(http.StatusUnauthorized, errorResponse("Invalid or missing JWT token"))
-	}
-
-	if requestedID != tokenUserID {
-		return c.JSON(http.StatusForbidden, errorResponse("You can only access your own data"))
-	}
-
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, errorResponse("Invalid user ID"))
@@ -197,20 +183,6 @@ func (h *UserHandler) UpdateUserName(c echo.Context) error {
 }
 
 func (h *UserHandler) GetUserPhotos(c echo.Context) error {
-	requestedID, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, errorResponse("Invalid user ID"))
-	}
-
-	tokenUserID, err := getJWTUserID(c.Request())
-	if err != nil {
-		return c.JSON(http.StatusUnauthorized, errorResponse("Invalid or missing JWT token"))
-	}
-
-	if requestedID != tokenUserID {
-		return c.JSON(http.StatusForbidden, errorResponse("You can only access your own data"))
-	}
-
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, errorResponse("Invalid user ID"))
@@ -399,19 +371,6 @@ func (h *UserHandler) AddUserTag(c echo.Context) error {
 }
 
 func (h *UserHandler) GetUserTags(c echo.Context) error {
-	requestedID, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, errorResponse("Invalid user ID"))
-	}
-
-	tokenUserID, err := getJWTUserID(c.Request())
-	if err != nil {
-		return c.JSON(http.StatusUnauthorized, errorResponse("Invalid or missing JWT token"))
-	}
-
-	if requestedID != tokenUserID {
-		return c.JSON(http.StatusForbidden, errorResponse("You can only access your own data"))
-	}
 
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
