@@ -57,7 +57,7 @@ func (s *PhotoService) UploadPhoto(ctx context.Context, file io.Reader, size int
 func (s *PhotoService) GetPhotoURL(objectName string, expiry time.Duration) (string, error) {
 
 	PublicPrefix := s.pubPrefix
-	PublicHost := s.pubPrefix
+	PublicHost := s.host
 
 	if strings.HasPrefix(objectName, PublicPrefix) {
 		publicURL := fmt.Sprintf("%s/%s/%s", PublicHost, s.bucket, objectName)
