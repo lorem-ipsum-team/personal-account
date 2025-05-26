@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -143,10 +144,11 @@ func (s *UserService) UpdateUserProfile(id uuid.UUID, updates models.UserProfile
 
 	if updates.BirthDate != nil && updates.Gender != nil {
 		temp := *updates.BirthDate
+		formatted := fmt.Sprintf("%02d/%02d/%04d", temp.Day(), temp.Month(), temp.Year())
 		anket := rabbit.UserAnket{
 			ID:        id,
 			Gender:    *updates.Gender,
-			BirthDate: temp.Format("01/01/2000"),
+			BirthDate: formatted,
 		}
 		ctx := context.TODO()
 		err := s.rabbitRepo.PublishAnket(ctx, anket)
@@ -159,6 +161,8 @@ func (s *UserService) UpdateUserProfile(id uuid.UUID, updates models.UserProfile
 			return err
 		}
 		temp := *updates.BirthDate
+		formatted := fmt.Sprintf("%02d/%02d/%04d", temp.Day(), temp.Month(), temp.Year())
+
 		if uzer.Gender == nil {
 			female := models.GenderFemale
 			uzer.Gender = &female
@@ -166,7 +170,7 @@ func (s *UserService) UpdateUserProfile(id uuid.UUID, updates models.UserProfile
 		anket := rabbit.UserAnket{
 			ID:        id,
 			Gender:    *uzer.Gender,
-			BirthDate: temp.Format("01/01/2000"),
+			BirthDate: formatted,
 		}
 		ctx := context.TODO()
 		err = s.rabbitRepo.PublishAnket(ctx, anket)
@@ -182,10 +186,12 @@ func (s *UserService) UpdateUserProfile(id uuid.UUID, updates models.UserProfile
 		if uzer.BirthDate == nil {
 			uzer.BirthDate = &time.Time{}
 		}
+		temp := *uzer.BirthDate
+		formatted := fmt.Sprintf("%02d/%02d/%04d", temp.Day(), temp.Month(), temp.Year())
 		anket := rabbit.UserAnket{
 			ID:        id,
 			Gender:    *updates.Gender,
-			BirthDate: uzer.BirthDate.Format("01/01/2000"),
+			BirthDate: formatted,
 		}
 		ctx := context.TODO()
 		err = s.rabbitRepo.PublishAnket(ctx, anket)
